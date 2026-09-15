@@ -1,0 +1,9 @@
+.git
+**/bin
+**/obj
+**/node_modules
+**/.vs
+**/*.user
+.env
+Frontend/.env
+Frontend/.env.*

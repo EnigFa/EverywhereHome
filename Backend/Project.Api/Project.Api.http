@@ -1,0 +1,22 @@
+@Project.Api_HostAddress = http://localhost:5176
+
+GET {{Project.Api_HostAddress}}/api/health
+Accept: application/json
+
+###
+
+GET {{Project.Api_HostAddress}}/api/listings
+Accept: application/json
+
+###
+
+POST {{Project.Api_HostAddress}}/api/auth/register
+Content-Type: application/json
+
+{
+  "email": "guest@everywherehome.local",
+  "password": "Guest123!",
+  "displayName": "Гість"
+}
+
+###

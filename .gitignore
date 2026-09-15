@@ -1,0 +1,16 @@
+.env
+**/.env
+.vs/
+*.user
+.idea/
+bin/
+obj/
+**/bin/
+**/obj/
+node_modules/
+**/node_modules/
+dist/
+wwwroot/uploads/
+Frontend/dist
+*.log
+.DS_Store
