@@ -1,10 +1,12 @@
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
-
 import { getToken, setSession, subscribeAuth } from "../api/session";
+import { useLanguage } from "../i18n";
+import { LanguageSwitcher } from "./LanguageSwitcher";
 
 export function AppLayout() {
   const navigate = useNavigate();
+  const { t } = useLanguage();
   const [signedIn, setSignedIn] = useState(Boolean(getToken()));
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -14,73 +16,37 @@ export function AppLayout() {
     sync();
     const unsubscribe = subscribeAuth(sync);
     window.addEventListener("storage", sync);
-    return () => {
-      unsubscribe();
-      window.removeEventListener("storage", sync);
-    };
+    return () => { unsubscribe(); window.removeEventListener("storage", sync); };
   }, []);
 
   useEffect(() => {
-    function onClick(event: MouseEvent) {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
-        setMenuOpen(false);
-      }
-    }
+    const onClick = (event: MouseEvent) => { if (menuRef.current && !menuRef.current.contains(event.target as Node)) setMenuOpen(false); };
     document.addEventListener("mousedown", onClick);
     return () => document.removeEventListener("mousedown", onClick);
   }, []);
 
-  function logout() {
-    setSession(null);
-    setSignedIn(false);
-    setMenuOpen(false);
-    navigate("/");
-  }
+  function logout() { setSession(null); setSignedIn(false); setMenuOpen(false); navigate("/"); }
 
-  return (
-    <div className="app-shell">
-      <header className="app-header">
-        <NavLink to="/" className="brand">
-          EverywhereHome
-        </NavLink>
+  return <div className="app-shell">
+    <header className="app-header">
+      <NavLink to="/" className="brand">EverywhereHome</NavLink>
+      <div className="header-right">
         <nav className="app-nav">
-          {signedIn ? (
-            <div className="account-menu" ref={menuRef}>
-              <button type="button" className="account-toggle" onClick={() => setMenuOpen((open) => !open)}>
-                Профіль
-              </button>
-              {menuOpen && (
-                <div className="account-panel">
-                  <NavLink to="/profile" onClick={() => setMenuOpen(false)}>
-                    Профіль
-                  </NavLink>
-                  <NavLink to="/host/listings" onClick={() => setMenuOpen(false)}>
-                    Мої оголошення
-                  </NavLink>
-                  <NavLink to="/bookings" onClick={() => setMenuOpen(false)}>
-                    Бронювання
-                  </NavLink>
-                  <NavLink to="/payments" onClick={() => setMenuOpen(false)}>
-                    Мої способи оплати
-                  </NavLink>
-                  <button type="button" className="text-btn" onClick={logout}>
-                    Вийти
-                  </button>
-                </div>
-              )}
-            </div>
-          ) : (
-            <>
-              <NavLink to="/login">Увійти</NavLink>
-              <NavLink to="/register">Реєстрація</NavLink>
-            </>
-          )}
+          {signedIn ? <div className="account-menu" ref={menuRef}>
+            <button type="button" className="account-toggle" onClick={() => setMenuOpen((open) => !open)}>{t("profile")}</button>
+            {menuOpen && <div className="account-panel">
+              <NavLink to="/profile" onClick={() => setMenuOpen(false)}>{t("profile")}</NavLink>
+              <NavLink to="/host/listings" onClick={() => setMenuOpen(false)}>{t("myListings")}</NavLink>
+              <NavLink to="/bookings" onClick={() => setMenuOpen(false)}>{t("bookings")}</NavLink>
+              <NavLink to="/payments" onClick={() => setMenuOpen(false)}>{t("payments")}</NavLink>
+              <button type="button" className="text-btn" onClick={logout}>{t("logout")}</button>
+            </div>}
+          </div> : <><NavLink to="/login">{t("login")}</NavLink><NavLink to="/register">{t("register")}</NavLink></>}
         </nav>
-      </header>
-      <main>
-        <Outlet />
-      </main>
-      <footer className="app-footer">© 2026 EverywhereHome</footer>
-    </div>
-  );
+        <LanguageSwitcher />
+      </div>
+    </header>
+    <main><Outlet /></main>
+    <footer className="app-footer">{t("footer")}</footer>
+  </div>;
 }

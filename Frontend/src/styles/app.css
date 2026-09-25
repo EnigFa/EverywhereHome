@@ -601,3 +601,12 @@ main {
     grid-template-columns: 1fr;
   }
 }
+
+/* Language selector */
+.header-right{display:flex;align-items:center;gap:12px}
+.language-switcher{position:relative;z-index:20}
+.language-toggle{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--border,#ddd);background:var(--surface,#fff);color:inherit;border-radius:10px;padding:8px 10px;font-size:12px;font-weight:700;cursor:pointer}
+.language-toggle:hover{background:var(--surface-muted,#f5f5f5)}
+.language-menu{position:absolute;right:0;top:calc(100% + 7px);min-width:145px;background:var(--surface,#fff);border:1px solid var(--border,#ddd);border-radius:12px;box-shadow:0 12px 30px rgba(0,0,0,.14);padding:5px}
+.language-menu button{display:block;width:100%;border:0;background:transparent;text-align:left;border-radius:8px;padding:9px 10px;cursor:pointer;color:inherit}
+.language-menu button:hover,.language-menu button.selected{background:var(--surface-muted,#f3f4f3);font-weight:700}

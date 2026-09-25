@@ -2,6 +2,7 @@ import { ChangeEvent, FormEvent, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { api, apiForm, mediaUrl, type HostListing, type HostListingEdit, type HostPhoto } from "../api/client";
 import { CategoryPicker } from "../components/CategoryPicker";
+import { useLanguage } from "../i18n";
 
 const blank: HostListingEdit = {
   id: "",
@@ -24,6 +25,7 @@ const blank: HostListingEdit = {
 };
 
 export function HostListingFormPage() {
+  const { t } = useLanguage();
   const { id } = useParams();
   const isNew = !id || id === "new";
   const navigate = useNavigate();
@@ -53,7 +55,7 @@ export function HostListingFormPage() {
     event.preventDefault();
     setError(null);
     if (form.categories.length === 0) {
-      setError("Оберіть хоча б одну категорію.");
+      setError(t("chooseCategory"));
       return;
     }
     const body = JSON.stringify({
@@ -125,29 +127,29 @@ export function HostListingFormPage() {
 
   return (
     <section className="host-page">
-      <h1>{isNew ? "Нове оголошення" : "Редагувати оголошення"}</h1>
+      <h1>{isNew ? t("newListing") : t("editListing")}</h1>
       <form className="profile-card host-form" onSubmit={onSubmit}>
         <label className="full">
-          Назва
+          {t("title")}
           <input value={form.title} onChange={(e) => set("title", e.target.value)} required />
         </label>
         <label>
-          Місто
+          {t("city")}
           <input value={form.city} onChange={(e) => set("city", e.target.value)} required />
         </label>
         <label>
-          Регіон
+          {t("region")}
           <input value={form.region} onChange={(e) => set("region", e.target.value)} />
         </label>
         <label className="full">
-          Адреса
+          {t("address")}
           <input value={form.address} onChange={(e) => set("address", e.target.value)} />
         </label>
         <div className="full">
           <CategoryPicker values={form.categories} onChange={(values) => set("categories", values)} />
         </div>
         <label>
-          Ціна за ніч, $
+          {t("priceNight")}
           <input
             type="number"
             min={1}
@@ -156,7 +158,7 @@ export function HostListingFormPage() {
           />
         </label>
         <label>
-          Прибирання, $
+          {t("cleaningPrice")}
           <input
             type="number"
             min={0}
@@ -165,42 +167,42 @@ export function HostListingFormPage() {
           />
         </label>
         <label>
-          Гості
+          {t("guests")}
           <input type="number" min={1} value={form.maxGuests} onChange={(e) => set("maxGuests", Number(e.target.value))} />
         </label>
         <label>
-          Спальні
+          {t("bedrooms")}
           <input type="number" min={0} value={form.bedrooms} onChange={(e) => set("bedrooms", Number(e.target.value))} />
         </label>
         <label>
-          Ліжка
+          {t("beds")}
           <input type="number" min={0} value={form.beds} onChange={(e) => set("beds", Number(e.target.value))} />
         </label>
         <label>
-          Ванні
+          {t("bathrooms")}
           <input type="number" min={1} value={form.bathrooms} onChange={(e) => set("bathrooms", Number(e.target.value))} />
         </label>
         <label className="full">
-          Опис
+          {t("description")}
           <textarea rows={4} value={form.description} onChange={(e) => set("description", e.target.value)} />
         </label>
         <label className="full">
-          Правила дому
+          {t("houseRules")}
           <textarea rows={3} value={form.houseRules} onChange={(e) => set("houseRules", e.target.value)} />
         </label>
         <label className="flag">
           <input type="checkbox" checked={form.isPublished} onChange={(e) => set("isPublished", e.target.checked)} />
-          Опубліковано
+          {t("publishedLabel")}
         </label>
         {!isNew && (
           <div className="full photo-editor">
-            <p>Фото</p>
+            <p>{t("photos")}</p>
             <div className="photo-thumbs">
               {(form.photos ?? []).map((photo) => (
                 <div key={photo.id} className="photo-thumb">
                   <img src={mediaUrl(photo.url)} alt="" />
                   <button type="button" className="text-btn" onClick={() => removePhoto(photo)}>
-                    Прибрати
+                    {t("removePhoto")}
                   </button>
                 </div>
               ))}
@@ -208,10 +210,10 @@ export function HostListingFormPage() {
             <input type="file" accept="image/jpeg,image/png,image/webp" onChange={onPhoto} />
           </div>
         )}
-        {isNew && <p className="muted full">Після збереження можна буде додати фото.</p>}
+        {isNew && <p className="muted full">{t("addPhotoHint")}</p>}
         {error && <p className="error full">{error}</p>}
         <button type="submit" className="auth-primary full">
-          Зберегти
+          {t("save")}
         </button>
       </form>
     </section>

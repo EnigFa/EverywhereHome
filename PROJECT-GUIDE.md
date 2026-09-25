@@ -235,3 +235,7 @@ Enum з сервера приходять числами. Підписи тіл�
 Список сторінок — `App.tsx`. Поля профілю в базі — `AppUser.cs` + `ProfileService.cs`.
 
 Практичний спосіб розібратись: пройти один сценарій (пошук → картка → реєстрація → бронь → оплата-заглушка → створити оголошення) і на кожному кроці відкрити сторінку, маршрут `/api/...` і сервіс, який ставить `SaveChanges` або рахує фільтр.
+
+
+## Frontend language support
+The frontend now includes a persistent Ukrainian/English language switcher in the top-right corner. The selected language is stored in localStorage under `eh_language` and the default is Ukrainian.

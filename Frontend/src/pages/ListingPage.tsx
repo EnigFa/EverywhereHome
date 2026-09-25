@@ -2,8 +2,10 @@ import { FormEvent, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { api, mediaUrl, type Booking, type ListingDetail } from "../api/client";
 import { getToken } from "../api/session";
+import { useLanguage } from "../i18n";
 
 export function ListingPage() {
+  const { t } = useLanguage();
   const { id } = useParams();
   const navigate = useNavigate();
   const [listing, setListing] = useState<ListingDetail | null>(null);
@@ -68,7 +70,7 @@ export function ListingPage() {
     return <p className="error">{error}</p>;
   }
   if (!listing) {
-    return <p>Завантаження…</p>;
+    return <p>{t("loading")}</p>;
   }
 
   const stayTotal = nights * listing.pricePerNight;
@@ -107,13 +109,13 @@ export function ListingPage() {
       <div>
         <h1>{listing.title}</h1>
         <p className="muted">
-          {listing.rating > 0 ? `${listing.rating.toFixed(2)} · ${listing.reviewCount} відгуків · ` : ""}
+          {listing.rating > 0 ? `${listing.rating.toFixed(2)} · ${listing.reviewCount} ${t("reviews")} · ` : ""}
           {listing.city}, {listing.region}, {listing.country}
         </p>
         {currentPhoto ? (
           <div className="photo-stage">
             {canBrowse && (
-              <button type="button" className="photo-nav prev" aria-label="Попереднє фото" onClick={() => step(-1)}>
+              <button type="button" className="photo-nav prev" aria-label={t("previousPhoto")} onClick={() => step(-1)}>
                 ‹
               </button>
             )}
@@ -121,7 +123,7 @@ export function ListingPage() {
               <img src={currentPhoto} alt="" />
             </button>
             {canBrowse && (
-              <button type="button" className="photo-nav next" aria-label="Наступне фото" onClick={() => step(1)}>
+              <button type="button" className="photo-nav next" aria-label={t("nextPhoto")} onClick={() => step(1)}>
                 ›
               </button>
             )}
@@ -135,36 +137,36 @@ export function ListingPage() {
           <div className="listing-hero" />
         )}
         <p className="listing-facts">
-          {listing.maxGuests} гості · {listing.bedrooms} спальні · {listing.beds} ліжка · {listing.bathrooms} ванні
+          {listing.maxGuests} {t("guestsCount")} · {listing.bedrooms} {t("bedrooms")} · {listing.beds} {t("beds")} · {listing.bathrooms} {t("bathrooms")}
         </p>
-        <p>Господар — {listing.host.displayName}</p>
+        <p>{t("host")} — {listing.host.displayName}</p>
         <p>{listing.description}</p>
-        <h2>Зручності</h2>
+        <h2>{t("amenities")}</h2>
         <ul className="amenity-list">
           {listing.amenities.map((item) => (
             <li key={item}>{item}</li>
           ))}
         </ul>
-        <h2>Правила</h2>
+        <h2>{t("rules")}</h2>
         <p>{listing.houseRules}</p>
         <p>{listing.safetyRules}</p>
         <p>{listing.cancellationPolicy}</p>
       </div>
       <aside className="booking-widget">
         <p className="booking-price">
-          ${listing.pricePerNight} <span>ніч</span>
+          ${listing.pricePerNight} <span>{t("perNight")}</span>
         </p>
         <form onSubmit={onBook}>
           <label>
-            Прибуття
+            {t("checkIn")}
             <input type="date" value={checkIn} onChange={(e) => setCheckIn(e.target.value)} required />
           </label>
           <label>
-            Виїзд
+            {t("checkOut")}
             <input type="date" value={checkOut} onChange={(e) => setCheckOut(e.target.value)} required />
           </label>
           <label>
-            Гості
+            {t("guests")}
             <input
               type="number"
               min={1}
@@ -177,22 +179,22 @@ export function ListingPage() {
             <p>
               ${listing.pricePerNight} × {nights} = ${stayTotal.toFixed(0)}
               <br />
-              Прибирання ${listing.cleaningFee}
+              {t("cleaning")} ${listing.cleaningFee}
               <br />
-              <strong>Усього ${total.toFixed(0)}</strong>
+              <strong>{t("total")} ${total.toFixed(0)}</strong>
             </p>
           )}
           {error && <p className="error">{error}</p>}
           {signedIn ? (
             <button type="submit" className="auth-primary" disabled={nights <= 0 || submitting}>
-              {submitting ? "Створюємо…" : "Забронювати"}
+              {submitting ? t("creating") : t("booking")}
             </button>
           ) : (
             <Link className="auth-primary book-login" to="/login">
-              Увійдіть, щоб забронювати
+              {t("bookingLogin")}
             </Link>
           )}
-          <p className="auth-lead">Оплата — заглушка, гроші не списуються.</p>
+          <p className="auth-lead">{t("paymentStub")}</p>
         </form>
       </aside>
       {lightbox && currentPhoto && (
@@ -201,7 +203,7 @@ export function ListingPage() {
             <button
               type="button"
               className="photo-nav prev"
-              aria-label="Попереднє фото"
+              aria-label={t("previousPhoto")}
               onClick={(event) => {
                 event.stopPropagation();
                 step(-1);
@@ -215,7 +217,7 @@ export function ListingPage() {
             <button
               type="button"
               className="photo-nav next"
-              aria-label="Наступне фото"
+              aria-label={t("nextPhoto")}
               onClick={(event) => {
                 event.stopPropagation();
                 step(1);
@@ -227,7 +229,7 @@ export function ListingPage() {
           <button
             type="button"
             className="lightbox-close"
-            aria-label="Закрити"
+            aria-label={t("close")}
             onClick={(event) => {
               event.stopPropagation();
               setLightbox(false);
