@@ -81,5 +81,38 @@ public class BookingsController : ControllerBase
         }
     }
 
+    [HttpPost("{id:guid}/cancel")]
+    public async Task<ActionResult<BookingDto>> Cancel(Guid id, CancellationToken cancellationToken)
+    {
+        return await ChangeStatus(id, _bookings.CancelAsync, cancellationToken);
+    }
+
+    [HttpPost("{id:guid}/complete")]
+    public async Task<ActionResult<BookingDto>> Complete(Guid id, CancellationToken cancellationToken)
+    {
+        return await ChangeStatus(id, _bookings.CompleteAsync, cancellationToken);
+    }
+
+    private async Task<ActionResult<BookingDto>> ChangeStatus(
+        Guid id,
+        Func<string, Guid, CancellationToken, Task<BookingDto>> action,
+        CancellationToken cancellationToken)
+    {
+        var userId = UserId();
+        if (userId is null)
+        {
+            return Unauthorized();
+        }
+
+        try
+        {
+            return Ok(await action(userId, id, cancellationToken));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
     private string? UserId() => User.FindFirstValue(ClaimTypes.NameIdentifier);
 }

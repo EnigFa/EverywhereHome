@@ -160,6 +160,43 @@ public class BookingService : IBookingService
         return await MapAsync(booking.Id, cancellationToken) ?? throw new InvalidOperationException("Бронювання не знайдено.");
     }
 
+    public async Task<BookingDto> CancelAsync(string guestId, Guid bookingId, CancellationToken cancellationToken = default)
+    {
+        var booking = await _db.Bookings
+            .FirstOrDefaultAsync(b => b.Id == bookingId && b.GuestId == guestId, cancellationToken)
+            ?? throw new InvalidOperationException("Бронювання не знайдено.");
+
+        if (booking.Status is not (BookingStatus.PendingPayment or BookingStatus.Confirmed))
+        {
+            throw new InvalidOperationException("Це бронювання не можна скасувати.");
+        }
+
+        booking.Status = BookingStatus.Cancelled;
+        await _db.SaveChangesAsync(cancellationToken);
+        return await MapAsync(booking.Id, cancellationToken) ?? throw new InvalidOperationException("Бронювання не знайдено.");
+    }
+
+    public async Task<BookingDto> CompleteAsync(string guestId, Guid bookingId, CancellationToken cancellationToken = default)
+    {
+        var booking = await _db.Bookings
+            .FirstOrDefaultAsync(b => b.Id == bookingId && b.GuestId == guestId, cancellationToken)
+            ?? throw new InvalidOperationException("Бронювання не знайдено.");
+
+        if (booking.Status != BookingStatus.Confirmed)
+        {
+            throw new InvalidOperationException("Завершити можна лише підтверджене бронювання.");
+        }
+
+        if (booking.CheckOut > DateOnly.FromDateTime(DateTime.UtcNow))
+        {
+            throw new InvalidOperationException("Бронювання ще не закінчилось.");
+        }
+
+        booking.Status = BookingStatus.Completed;
+        await _db.SaveChangesAsync(cancellationToken);
+        return await MapAsync(booking.Id, cancellationToken) ?? throw new InvalidOperationException("Бронювання не знайдено.");
+    }
+
     private async Task<BookingDto?> MapAsync(Guid id, CancellationToken cancellationToken)
     {
         return await _db.Bookings
