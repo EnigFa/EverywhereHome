@@ -7,7 +7,7 @@ using Project.Application.Auth;
 using Project.Application.Entities;
 
 namespace Project.Api.Controllers;
-
+//Just comment
 [ApiController]
 [Route("api/auth")]
 public class AuthController : ControllerBase
