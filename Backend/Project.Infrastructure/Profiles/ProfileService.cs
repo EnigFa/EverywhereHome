@@ -67,5 +67,6 @@ public class ProfileService : IProfileService
         user.FunFact,
         user.BiographyTitle,
         user.Pets,
-        user.Intro);
+        user.Intro,
+        user.EmailConfirmed);
 }

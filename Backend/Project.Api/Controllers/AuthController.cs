@@ -7,7 +7,7 @@ using Project.Application.Auth;
 using Project.Application.Entities;
 
 namespace Project.Api.Controllers;
-//Just comment
+
 [ApiController]
 [Route("api/auth")]
 public class AuthController : ControllerBase
@@ -36,6 +36,22 @@ public class AuthController : ControllerBase
         {
             var result = await _authService.RegisterAsync(request, cancellationToken);
             return Ok(result);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
+    }
+
+    [AllowAnonymous]
+    [HttpGet("confirm-email")]
+    public async Task<IActionResult> ConfirmEmail([FromQuery] string userId, [FromQuery] string token, CancellationToken cancellationToken)
+    {
+        try
+        {
+            await _authService.ConfirmEmailAsync(new ConfirmEmailRequest(userId, token), cancellationToken);
+            var frontend = _configuration["Frontend:Url"]?.TrimEnd('/') ?? "http://localhost:5173";
+            return Redirect($"{frontend}/login");
         }
         catch (InvalidOperationException ex)
         {

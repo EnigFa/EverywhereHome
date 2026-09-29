@@ -5,11 +5,15 @@ using Microsoft.Extensions.DependencyInjection;
 using Project.Application.Auth;
 using Project.Application.Entities;
 using Project.Application.Bookings;
+using Project.Application.Favorites;
+using Project.Application.Reviews;
 using Project.Application.HostListings;
 using Project.Application.Listings;
 using Project.Application.Profiles;
 using Project.Infrastructure.Auth;
 using Project.Infrastructure.Bookings;
+using Project.Infrastructure.Favorites;
+using Project.Infrastructure.Reviews;
 using Project.Infrastructure.Data;
 using Project.Application.Files;
 using Project.Infrastructure.Files;
@@ -54,10 +58,13 @@ public static class DependencyInjection
 
         services.AddHttpContextAccessor();
 
+        services.AddScoped<IEmailSender, SmtpEmailSender>();
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IListingService, ListingService>();
         services.AddScoped<IProfileService, ProfileService>();
         services.AddScoped<IBookingService, BookingService>();
+        services.AddScoped<IFavoriteService, FavoriteService>();
+        services.AddScoped<IReviewService, ReviewService>();
         services.AddScoped<IHostListingService, HostListingService>();
         services.AddSingleton<IFileStorage, LocalFileStorage>();
 

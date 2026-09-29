@@ -19,7 +19,8 @@ public record ProfileDto(
     string? FunFact,
     string? BiographyTitle,
     string? Pets,
-    string? Intro);
+    string? Intro,
+    bool EmailConfirmed);
 
 public record UpdateProfileRequest(
     string DisplayName,

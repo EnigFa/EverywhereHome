@@ -36,6 +36,10 @@ public record ListingSearchResultDto(
 
 public record HostSummaryDto(string DisplayName, string? AvatarUrl);
 
+public record ReviewItemDto(Guid Id, string AuthorName, decimal Rating, string Text, DateTime CreatedAtUtc);
+
+public record OccupiedStayDto(DateOnly CheckIn, DateOnly CheckOut);
+
 public record ListingDetailDto(
     Guid Id,
     string Title,
@@ -60,7 +64,9 @@ public record ListingDetailDto(
     string CancellationPolicy,
     IReadOnlyList<string> PhotoUrls,
     IReadOnlyList<string> Amenities,
-    HostSummaryDto Host);
+    HostSummaryDto Host,
+    IReadOnlyList<ReviewItemDto> Reviews,
+    IReadOnlyList<OccupiedStayDto> OccupiedStays);
 
 public interface IListingService
 {

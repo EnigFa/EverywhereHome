@@ -31,4 +31,6 @@ public interface IBookingService
     Task<IReadOnlyList<BookingDto>> ListMineAsync(string guestId, CancellationToken cancellationToken = default);
     Task<BookingDto?> GetAsync(string guestId, Guid bookingId, CancellationToken cancellationToken = default);
     Task<BookingDto> ConfirmStubPaymentAsync(string guestId, Guid bookingId, ConfirmPaymentRequest request, CancellationToken cancellationToken = default);
+    Task<BookingDto> CancelAsync(string guestId, Guid bookingId, CancellationToken cancellationToken = default);
+    Task<BookingDto> CompleteAsync(string guestId, Guid bookingId, CancellationToken cancellationToken = default);
 }

@@ -13,11 +13,13 @@ public class AuthService : IAuthService
 {
     private readonly UserManager<AppUser> _userManager;
     private readonly IConfiguration _configuration;
+    private readonly IEmailSender _email;
 
-    public AuthService(UserManager<AppUser> userManager, IConfiguration configuration)
+    public AuthService(UserManager<AppUser> userManager, IConfiguration configuration, IEmailSender email)
     {
         _userManager = userManager;
         _configuration = configuration;
+        _email = email;
     }
 
     public async Task<AuthResponse> RegisterAsync(RegisterRequest request, CancellationToken cancellationToken = default)
@@ -38,7 +40,7 @@ public class AuthService : IAuthService
             UserName = request.Email,
             Email = request.Email,
             DisplayName = request.DisplayName,
-            EmailConfirmed = true
+            EmailConfirmed = false
         };
 
         var result = await _userManager.CreateAsync(user, request.Password);
@@ -48,7 +50,31 @@ public class AuthService : IAuthService
             throw new InvalidOperationException(errors);
         }
 
+        var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
+        var frontend = _configuration["Frontend:Url"]?.TrimEnd('/') ?? "http://localhost:5173";
+        var link = $"{frontend}/api/auth/confirm-email?userId={Uri.EscapeDataString(user.Id)}&token={Uri.EscapeDataString(token)}";
+        await _email.SendAsync(
+            user.Email!,
+            "Підтвердьте пошту EverywhereHome",
+            $"Перейдіть за посиланням, щоб підтвердити пошту:{Environment.NewLine}{link}",
+            cancellationToken);
         return CreateResponse(user);
+    }
+
+    public async Task ConfirmEmailAsync(ConfirmEmailRequest request, CancellationToken cancellationToken = default)
+    {
+        var user = await _userManager.FindByIdAsync(request.UserId)
+            ?? throw new InvalidOperationException("Користувача не знайдено.");
+        if (user.EmailConfirmed)
+        {
+            return;
+        }
+
+        var result = await _userManager.ConfirmEmailAsync(user, request.Token);
+        if (!result.Succeeded)
+        {
+            throw new InvalidOperationException("Посилання недійсне або вже використане.");
+        }
     }
 
     public async Task<AuthResponse> LoginAsync(LoginRequest request, CancellationToken cancellationToken = default)
@@ -70,7 +96,7 @@ public class AuthService : IAuthService
         var existingByLogin = await _userManager.FindByLoginAsync(request.Provider, request.ProviderKey);
         if (existingByLogin is not null)
         {
-            return CreateResponse(existingByLogin);
+            return await CreateConfirmedResponseAsync(existingByLogin);
         }
 
         var user = await _userManager.FindByEmailAsync(request.Email);
@@ -95,6 +121,21 @@ public class AuthService : IAuthService
         if (!addLogin.Succeeded)
         {
             throw new InvalidOperationException(string.Join(" ", addLogin.Errors.Select(e => e.Description)));
+        }
+
+        return await CreateConfirmedResponseAsync(user);
+    }
+
+    private async Task<AuthResponse> CreateConfirmedResponseAsync(AppUser user)
+    {
+        if (!user.EmailConfirmed)
+        {
+            user.EmailConfirmed = true;
+            var update = await _userManager.UpdateAsync(user);
+            if (!update.Succeeded)
+            {
+                throw new InvalidOperationException(string.Join(" ", update.Errors.Select(e => e.Description)));
+            }
         }
 
         return CreateResponse(user);
