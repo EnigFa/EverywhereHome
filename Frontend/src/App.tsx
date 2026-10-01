@@ -9,6 +9,10 @@ import { PayPage } from "./pages/PayPage";
 import { HostListingFormPage } from "./pages/HostListingFormPage";
 import { HostListingsPage } from "./pages/HostListingsPage";
 import { PaymentMethodsPage } from "./pages/PaymentMethodsPage";
+import { FavoritesPage } from "./pages/FavoritesPage";
+import { MessagesPage } from "./pages/MessagesPage";
+import { HostApplicationPage } from "./pages/HostApplicationPage";
+import { AdminPage } from "./pages/AdminPage";
 import { ProfilePage } from "./pages/ProfilePage";
 
 export function App() {
@@ -22,6 +26,10 @@ export function App() {
           <Route path="/bookings/:id/pay" element={<PayPage />} />
           <Route path="/profile" element={<ProfilePage />} />
           <Route path="/payments" element={<PaymentMethodsPage />} />
+          <Route path="/favorites" element={<FavoritesPage />} />
+          <Route path="/messages" element={<MessagesPage />} />
+          <Route path="/host/application" element={<HostApplicationPage />} />
+          <Route path="/admin" element={<AdminPage />} />
           <Route path="/host/listings" element={<HostListingsPage />} />
           <Route path="/host/listings/new" element={<HostListingFormPage />} />
           <Route path="/host/listings/:id" element={<HostListingFormPage />} />

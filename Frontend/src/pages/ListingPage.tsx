@@ -16,6 +16,7 @@ export function ListingPage() {
   const [submitting, setSubmitting] = useState(false);
   const [photoIndex, setPhotoIndex] = useState(0);
   const [lightbox, setLightbox] = useState(false);
+  const [favorite, setFavorite] = useState(false);
 
   useEffect(() => {
     if (!id) {
@@ -66,6 +67,15 @@ export function ListingPage() {
     return () => window.removeEventListener("keydown", onKey);
   }, [photos.length]);
 
+  const signedIn = Boolean(getToken());
+
+  useEffect(() => {
+    if (!signedIn || !listing) return;
+    api<Array<{ id: string }>>("/api/favorites")
+      .then((items) => setFavorite(items.some((item) => item.id === listing.id)))
+      .catch(() => undefined);
+  }, [listing, signedIn]);
+
   if (error && !listing) {
     return <p className="error">{error}</p>;
   }
@@ -75,7 +85,16 @@ export function ListingPage() {
 
   const stayTotal = nights * listing.pricePerNight;
   const total = nights > 0 ? stayTotal + listing.cleaningFee : 0;
-  const signedIn = Boolean(getToken());
+
+  async function toggleFavorite() {
+    if (!listing) return;
+    try {
+      await api(`/api/favorites/${listing.id}`, { method: favorite ? "DELETE" : "POST" });
+      setFavorite((value) => !value);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : t("error"));
+    }
+  }
 
   async function onBook(event: FormEvent) {
     event.preventDefault();
@@ -140,6 +159,7 @@ export function ListingPage() {
           {listing.maxGuests} {t("guestsCount")} · {listing.bedrooms} {t("bedrooms")} · {listing.beds} {t("beds")} · {listing.bathrooms} {t("bathrooms")}
         </p>
         <p>{t("host")} — {listing.host.displayName}</p>
+        {signedIn && <div className="listing-actions"><button type="button" className="dropdown-toggle" onClick={() => void toggleFavorite()}>{favorite ? t("removeFavorite") : t("favorite")}</button><Link className="dropdown-toggle" to={`/messages?listingId=${listing.id}`}>{t("messageHost")}</Link></div>}
         <p>{listing.description}</p>
         <h2>{t("amenities")}</h2>
         <ul className="amenity-list">

@@ -239,3 +239,14 @@ Enum з сервера приходять числами. Підписи тіл�
 
 ## Frontend language support
 The frontend now includes a persistent Ukrainian/English language switcher in the top-right corner. The selected language is stored in localStorage under `eh_language` and the default is Ukrainian.
+
+## Extended application features
+The existing frontend and backend remain intact and were extended with additional screens that use the existing API contracts:
+
+- Favorites: view and remove saved listings; listing details can add/remove a favorite.
+- Messaging: guest support, listing conversations, host conversations, and admin support replies.
+- Host application: submit identity/document information and view application status.
+- Admin panel: review host applications, reports, users, and support conversations.
+- The existing Ukrainian/English language switcher covers the added screens as well.
+
+The backend already contains the required services, controllers, persistence models, and migrations for these features, so the extension reuses those APIs instead of replacing existing backend code.

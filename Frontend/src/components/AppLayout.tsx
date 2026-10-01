@@ -39,6 +39,10 @@ export function AppLayout() {
               <NavLink to="/host/listings" onClick={() => setMenuOpen(false)}>{t("myListings")}</NavLink>
               <NavLink to="/bookings" onClick={() => setMenuOpen(false)}>{t("bookings")}</NavLink>
               <NavLink to="/payments" onClick={() => setMenuOpen(false)}>{t("payments")}</NavLink>
+              <NavLink to="/favorites" onClick={() => setMenuOpen(false)}>{t("favorites")}</NavLink>
+              <NavLink to="/messages" onClick={() => setMenuOpen(false)}>{t("messages")}</NavLink>
+              <NavLink to="/host/application" onClick={() => setMenuOpen(false)}>{t("hostApplication")}</NavLink>
+              <NavLink to="/admin" onClick={() => setMenuOpen(false)}>{t("admin")}</NavLink>
               <button type="button" className="text-btn" onClick={logout}>{t("logout")}</button>
             </div>}
           </div> : <><NavLink to="/login">{t("login")}</NavLink><NavLink to="/register">{t("register")}</NavLink></>}

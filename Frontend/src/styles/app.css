@@ -610,3 +610,26 @@ main {
 .language-menu{position:absolute;right:0;top:calc(100% + 7px);min-width:145px;background:var(--surface,#fff);border:1px solid var(--border,#ddd);border-radius:12px;box-shadow:0 12px 30px rgba(0,0,0,.14);padding:5px}
 .language-menu button{display:block;width:100%;border:0;background:transparent;text-align:left;border-radius:8px;padding:9px 10px;cursor:pointer;color:inherit}
 .language-menu button:hover,.language-menu button.selected{background:var(--surface-muted,#f3f4f3);font-weight:700}
+
+
+/* Extended application screens */
+.section-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:20px}
+.full{width:100%}
+.favorite-card{position:relative}
+.favorite-card>a{color:inherit;text-decoration:none}
+.messages-layout{display:grid;grid-template-columns:240px minmax(0,1fr);gap:20px}
+.message-sidebar{display:flex;flex-direction:column;gap:10px;align-self:start}
+.conversation-item{border:1px solid var(--border,#ddd);background:transparent;color:inherit;border-radius:10px;padding:10px;text-align:left;cursor:pointer}
+.message-panel{min-height:480px;display:flex;flex-direction:column}
+.message-list{display:flex;flex-direction:column;gap:10px;flex:1;overflow:auto;max-height:520px;padding:4px}
+.message-bubble{display:flex;flex-direction:column;gap:4px;padding:12px;border-radius:12px;background:var(--surface-muted,#f4f4f5);max-width:80%}
+.message-bubble small{opacity:.65}
+.message-form{display:flex;gap:10px;margin-top:16px;align-items:flex-end}
+.message-form textarea{flex:1}
+.admin-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px}
+.admin-row{display:flex;justify-content:space-between;gap:12px;padding:12px 0;border-top:1px solid var(--border,#ddd)}
+.admin-row>div{min-width:0;display:flex;flex-direction:column;gap:3px}
+.admin-row small{opacity:.7;overflow-wrap:anywhere}
+@media(max-width:760px){.messages-layout,.admin-grid{grid-template-columns:1fr}.message-form{flex-direction:column;align-items:stretch}.message-bubble{max-width:100%}}
+
+.listing-actions{display:flex;gap:10px;flex-wrap:wrap;margin:14px 0}
