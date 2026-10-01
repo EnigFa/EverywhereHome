@@ -19,7 +19,7 @@ public class FavoriteService : IFavoriteService
     {
         return await _db.Favorites
             .AsNoTracking()
-            .Where(f => f.UserId == userId && f.Listing!.IsPublished)
+            .Where(f => f.UserId == userId && f.Listing!.IsPublished && !f.Listing.Host!.IsBlocked)
             .OrderBy(f => f.Listing!.Title)
             .Select(f => new ListingCardDto(
                 f.Listing!.Id,

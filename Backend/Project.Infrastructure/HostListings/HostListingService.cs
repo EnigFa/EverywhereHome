@@ -43,8 +43,7 @@ public class HostListingService : IHostListingService
         var user = await _users.FindByIdAsync(hostId) ?? throw new InvalidOperationException("Користувача не знайдено.");
         if (!user.IsHost)
         {
-            user.IsHost = true;
-            await _users.UpdateAsync(user);
+            throw new InvalidOperationException("Створювати оголошення може лише підтверджений господар.");
         }
 
         var listing = Apply(new Listing { Id = Guid.NewGuid(), HostId = hostId }, input);

@@ -7,6 +7,8 @@ public class AppUser : IdentityUser
     public string DisplayName { get; set; } = string.Empty;
     public string? AvatarUrl { get; set; }
     public bool IsHost { get; set; }
+    public bool IsAdmin { get; set; }
+    public bool IsBlocked { get; set; }
     public bool PhoneVerified { get; set; }
 
     public string? School { get; set; }

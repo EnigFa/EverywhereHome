@@ -85,6 +85,11 @@ public class AuthService : IAuthService
             throw new UnauthorizedAccessException("Невірна пошта або пароль.");
         }
 
+        if (user.IsBlocked)
+        {
+            throw new UnauthorizedAccessException("Акаунт заблоковано.");
+        }
+
         return CreateResponse(user);
     }
 
@@ -96,10 +101,20 @@ public class AuthService : IAuthService
         var existingByLogin = await _userManager.FindByLoginAsync(request.Provider, request.ProviderKey);
         if (existingByLogin is not null)
         {
+            if (existingByLogin.IsBlocked)
+            {
+                throw new InvalidOperationException("Акаунт заблоковано.");
+            }
+
             return await CreateConfirmedResponseAsync(existingByLogin);
         }
 
         var user = await _userManager.FindByEmailAsync(request.Email);
+        if (user is not null && user.IsBlocked)
+        {
+            throw new InvalidOperationException("Акаунт заблоковано.");
+        }
+
         if (user is null)
         {
             user = new AppUser

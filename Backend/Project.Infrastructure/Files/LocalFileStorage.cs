@@ -6,12 +6,15 @@ namespace Project.Infrastructure.Files;
 public class LocalFileStorage : IFileStorage
 {
     private readonly string _uploadRoot;
+    private readonly string _documentRoot;
 
     public LocalFileStorage(IWebHostEnvironment env)
     {
         var webRoot = env.WebRootPath ?? Path.Combine(env.ContentRootPath, "wwwroot");
         _uploadRoot = Path.Combine(webRoot, "uploads", "listings");
+        _documentRoot = Path.Combine(webRoot, "uploads", "documents");
         Directory.CreateDirectory(_uploadRoot);
+        Directory.CreateDirectory(_documentRoot);
     }
 
     public async Task<string> SaveListingPhotoAsync(Stream content, string fileName, CancellationToken cancellationToken = default)
@@ -27,6 +30,21 @@ public class LocalFileStorage : IFileStorage
         await using var file = File.Create(path);
         await content.CopyToAsync(file, cancellationToken);
         return $"/uploads/listings/{stored}";
+    }
+
+    public async Task<string> SaveHostDocumentAsync(Stream content, string fileName, CancellationToken cancellationToken = default)
+    {
+        var extension = Path.GetExtension(fileName).ToLowerInvariant();
+        if (extension is not ".jpg" and not ".jpeg" and not ".png" and not ".webp" and not ".pdf")
+        {
+            throw new InvalidOperationException("Дозволені формати документа: JPG, PNG, WebP, PDF.");
+        }
+
+        var stored = $"{Guid.NewGuid():N}{extension}";
+        var path = Path.Combine(_documentRoot, stored);
+        await using var file = File.Create(path);
+        await content.CopyToAsync(file, cancellationToken);
+        return $"/uploads/documents/{stored}";
     }
 
     public void TryDeleteLocal(string url)
