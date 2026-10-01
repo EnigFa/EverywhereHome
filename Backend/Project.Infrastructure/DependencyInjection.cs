@@ -11,7 +11,9 @@ using Project.Application.Reviews;
 using Project.Application.HostApplications;
 using Project.Application.HostListings;
 using Project.Application.Listings;
+using Project.Application.Messages;
 using Project.Application.Profiles;
+using Project.Application.Reports;
 using Project.Infrastructure.Admin;
 using Project.Infrastructure.Auth;
 using Project.Infrastructure.Bookings;
@@ -23,7 +25,9 @@ using Project.Infrastructure.Files;
 using Project.Infrastructure.HostApplications;
 using Project.Infrastructure.HostListings;
 using Project.Infrastructure.Listings;
+using Project.Infrastructure.Messages;
 using Project.Infrastructure.Profiles;
+using Project.Infrastructure.Reports;
 
 namespace Project.Infrastructure;
 
@@ -72,6 +76,8 @@ public static class DependencyInjection
         services.AddScoped<IHostListingService, HostListingService>();
         services.AddScoped<IHostApplicationService, HostApplicationService>();
         services.AddScoped<IAdminUserService, AdminUserService>();
+        services.AddScoped<IReportService, ReportService>();
+        services.AddScoped<IConversationService, ConversationService>();
         services.AddSingleton<IFileStorage, LocalFileStorage>();
 
         return services;

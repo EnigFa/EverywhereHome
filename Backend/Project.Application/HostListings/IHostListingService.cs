@@ -17,7 +17,8 @@ public record HostListingInput(
     int Beds,
     int Bathrooms,
     string HouseRules,
-    bool IsPublished);
+    bool IsPublished,
+    IReadOnlyList<string>? Amenities);
 
 public record HostListingDto(
     Guid Id,
@@ -44,7 +45,8 @@ public record HostListingEditDto(
     int Bathrooms,
     string HouseRules,
     bool IsPublished,
-    IReadOnlyList<HostPhotoDto> Photos);
+    IReadOnlyList<HostPhotoDto> Photos,
+    IReadOnlyList<string> Amenities);
 
 public record HostPhotoDto(Guid Id, string Url);
 
