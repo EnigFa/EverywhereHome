@@ -130,6 +130,25 @@ app.Use((context, next) =>
 app.UseCors("frontend");
 app.UseStaticFiles();
 app.UseAuthentication();
+app.Use(async (context, next) =>
+{
+    if (context.User.Identity?.IsAuthenticated == true)
+    {
+        var userId = context.User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (!string.IsNullOrEmpty(userId))
+        {
+            var users = context.RequestServices.GetRequiredService<UserManager<AppUser>>();
+            var user = await users.FindByIdAsync(userId);
+            if (user is null || user.IsBlocked)
+            {
+                context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                return;
+            }
+        }
+    }
+
+    await next();
+});
 app.UseAuthorization();
 app.MapControllers();
 

@@ -18,7 +18,7 @@ public class ListingService : IListingService
     {
         var listings = _db.Listings
             .AsNoTracking()
-            .Where(l => l.IsPublished);
+            .Where(l => l.IsPublished && !l.Host!.IsBlocked);
 
         if (!string.IsNullOrWhiteSpace(query.Title))
         {
@@ -94,7 +94,7 @@ public class ListingService : IListingService
     {
         return await _db.Listings
             .AsNoTracking()
-            .Where(l => l.Id == id && l.IsPublished)
+            .Where(l => l.Id == id && l.IsPublished && !l.Host!.IsBlocked)
             .Select(l => new ListingDetailDto(
                 l.Id,
                 l.Title,

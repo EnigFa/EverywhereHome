@@ -19,6 +19,7 @@ public class AppDbContext : IdentityDbContext<AppUser>
     public DbSet<Review> Reviews => Set<Review>();
     public DbSet<Booking> Bookings => Set<Booking>();
     public DbSet<Payment> Payments => Set<Payment>();
+    public DbSet<HostApplication> HostApplications => Set<HostApplication>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -83,6 +84,14 @@ public class AppDbContext : IdentityDbContext<AppUser>
             entity.HasOne(x => x.Booking)
                 .WithMany(x => x.Payments)
                 .HasForeignKey(x => x.BookingId);
+        });
+
+        builder.Entity<HostApplication>(entity =>
+        {
+            entity.HasOne(x => x.User)
+                .WithMany()
+                .HasForeignKey(x => x.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
     }
 }

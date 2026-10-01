@@ -22,6 +22,18 @@ public static class DataSeeder
             await users.CreateAsync(host, "Host123!");
         }
 
+        if (await users.FindByEmailAsync("admin@everywherehome.local") is null)
+        {
+            await users.CreateAsync(new AppUser
+            {
+                UserName = "admin@everywherehome.local",
+                Email = "admin@everywherehome.local",
+                DisplayName = "Адміністратор",
+                IsAdmin = true,
+                EmailConfirmed = true
+            }, "Admin123!");
+        }
+
         if (await users.FindByEmailAsync("guest@everywherehome.local") is null)
         {
             await users.CreateAsync(new AppUser
