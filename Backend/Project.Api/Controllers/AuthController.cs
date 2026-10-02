@@ -81,8 +81,6 @@ public class AuthController : ControllerBase
         var scheme = provider.ToLowerInvariant() switch
         {
             "google" when providers.Google => GoogleDefaults.AuthenticationScheme,
-            "facebook" when providers.Facebook => "Facebook",
-            "apple" when providers.Apple => "Apple",
             _ => null
         };
 
@@ -143,8 +141,6 @@ public class AuthController : ControllerBase
         provider.ToLowerInvariant() switch
         {
             "google" => "Google вхід ще не налаштовано. Додайте ClientId і ClientSecret.",
-            "apple" => "Вхід через Apple з’явиться після додавання ключів.",
-            "facebook" => "Вхід через Facebook з’явиться після додавання ключів.",
             _ => "Цей спосіб входу не підтримується."
         };
 }

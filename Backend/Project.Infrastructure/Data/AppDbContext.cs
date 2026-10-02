@@ -23,6 +23,7 @@ public class AppDbContext : IdentityDbContext<AppUser>
     public DbSet<Report> Reports => Set<Report>();
     public DbSet<Conversation> Conversations => Set<Conversation>();
     public DbSet<ChatMessage> ChatMessages => Set<ChatMessage>();
+    public DbSet<ConversationRead> ConversationReads => Set<ConversationRead>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -102,6 +103,8 @@ public class AppDbContext : IdentityDbContext<AppUser>
             entity.HasOne(x => x.Reporter).WithMany().HasForeignKey(x => x.ReporterId).OnDelete(DeleteBehavior.Restrict);
             entity.HasOne(x => x.ReportedUser).WithMany().HasForeignKey(x => x.ReportedUserId).OnDelete(DeleteBehavior.Restrict);
             entity.HasOne(x => x.Listing).WithMany().HasForeignKey(x => x.ListingId).OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(x => x.Assignee).WithMany().HasForeignKey(x => x.AssigneeId).OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(x => x.ResolvedBy).WithMany().HasForeignKey(x => x.ResolvedById).OnDelete(DeleteBehavior.Restrict);
         });
 
         builder.Entity<Conversation>(entity =>
@@ -109,6 +112,14 @@ public class AppDbContext : IdentityDbContext<AppUser>
             entity.HasOne(x => x.User).WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Restrict);
             entity.HasOne(x => x.Host).WithMany().HasForeignKey(x => x.HostId).OnDelete(DeleteBehavior.Restrict);
             entity.HasOne(x => x.Listing).WithMany().HasForeignKey(x => x.ListingId).OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(x => x.Assignee).WithMany().HasForeignKey(x => x.AssigneeId).OnDelete(DeleteBehavior.Restrict);
+            entity.HasOne(x => x.ResolvedBy).WithMany().HasForeignKey(x => x.ResolvedById).OnDelete(DeleteBehavior.Restrict);
+        });
+
+        builder.Entity<ConversationRead>(entity =>
+        {
+            entity.HasKey(x => new { x.ConversationId, x.UserId });
+            entity.HasOne(x => x.Conversation).WithMany().HasForeignKey(x => x.ConversationId);
         });
 
         builder.Entity<ChatMessage>(entity =>

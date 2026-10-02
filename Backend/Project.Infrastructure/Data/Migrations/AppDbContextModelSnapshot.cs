@@ -220,6 +220,9 @@ namespace Project.Infrastructure.Data.Migrations
                     b.Property<bool>("IsBlocked")
                         .HasColumnType("bit");
 
+                    b.Property<bool>("IsChiefAdmin")
+                        .HasColumnType("bit");
+
                     b.Property<bool>("IsHost")
                         .HasColumnType("bit");
 
@@ -269,6 +272,9 @@ namespace Project.Infrastructure.Data.Migrations
 
                     b.Property<string>("TimeSink")
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("TrustLevel")
+                        .HasColumnType("int");
 
                     b.Property<bool>("TwoFactorEnabled")
                         .HasColumnType("bit");
@@ -352,6 +358,12 @@ namespace Project.Infrastructure.Data.Migrations
                     b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("datetime2");
 
+                    b.Property<DateTime?>("DeletedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("EditedAtUtc")
+                        .HasColumnType("datetime2");
+
                     b.Property<string>("SenderId")
                         .IsRequired()
                         .HasColumnType("nvarchar(450)");
@@ -375,8 +387,14 @@ namespace Project.Infrastructure.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<string>("AssigneeId")
+                        .HasColumnType("nvarchar(450)");
+
                     b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("datetime2");
+
+                    b.Property<string>("Decision")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("HostId")
                         .HasColumnType("nvarchar(450)");
@@ -387,19 +405,51 @@ namespace Project.Infrastructure.Data.Migrations
                     b.Property<Guid?>("ListingId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<Guid?>("ReportId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("ResolvedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ResolvedById")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
                     b.Property<string>("UserId")
                         .IsRequired()
                         .HasColumnType("nvarchar(450)");
 
                     b.HasKey("Id");
 
+                    b.HasIndex("AssigneeId");
+
                     b.HasIndex("HostId");
 
                     b.HasIndex("ListingId");
 
+                    b.HasIndex("ResolvedById");
+
                     b.HasIndex("UserId");
 
                     b.ToTable("Conversations");
+                });
+
+            modelBuilder.Entity("Project.Application.Entities.ConversationRead", b =>
+                {
+                    b.Property<Guid>("ConversationId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("UserId")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime>("LastReadAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("ConversationId", "UserId");
+
+                    b.ToTable("ConversationReads");
                 });
 
             modelBuilder.Entity("Project.Application.Entities.Favorite", b =>
@@ -625,8 +675,17 @@ namespace Project.Infrastructure.Data.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<string>("AssigneeId")
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<Guid?>("ConversationId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("datetime2");
+
+                    b.Property<string>("Decision")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<Guid?>("ListingId")
                         .HasColumnType("uniqueidentifier");
@@ -636,6 +695,12 @@ namespace Project.Infrastructure.Data.Migrations
 
                     b.Property<string>("ReporterId")
                         .IsRequired()
+                        .HasColumnType("nvarchar(450)");
+
+                    b.Property<DateTime?>("ResolvedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ResolvedById")
                         .HasColumnType("nvarchar(450)");
 
                     b.Property<int>("Status")
@@ -650,11 +715,15 @@ namespace Project.Infrastructure.Data.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("AssigneeId");
+
                     b.HasIndex("ListingId");
 
                     b.HasIndex("ReportedUserId");
 
                     b.HasIndex("ReporterId");
+
+                    b.HasIndex("ResolvedById");
 
                     b.ToTable("Reports");
                 });
@@ -786,6 +855,11 @@ namespace Project.Infrastructure.Data.Migrations
 
             modelBuilder.Entity("Project.Application.Entities.Conversation", b =>
                 {
+                    b.HasOne("Project.Application.Entities.AppUser", "Assignee")
+                        .WithMany()
+                        .HasForeignKey("AssigneeId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("Project.Application.Entities.AppUser", "Host")
                         .WithMany()
                         .HasForeignKey("HostId")
@@ -796,17 +870,37 @@ namespace Project.Infrastructure.Data.Migrations
                         .HasForeignKey("ListingId")
                         .OnDelete(DeleteBehavior.Restrict);
 
+                    b.HasOne("Project.Application.Entities.AppUser", "ResolvedBy")
+                        .WithMany()
+                        .HasForeignKey("ResolvedById")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("Project.Application.Entities.AppUser", "User")
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.Navigation("Assignee");
+
                     b.Navigation("Host");
 
                     b.Navigation("Listing");
 
+                    b.Navigation("ResolvedBy");
+
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("Project.Application.Entities.ConversationRead", b =>
+                {
+                    b.HasOne("Project.Application.Entities.Conversation", "Conversation")
+                        .WithMany()
+                        .HasForeignKey("ConversationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Conversation");
                 });
 
             modelBuilder.Entity("Project.Application.Entities.Favorite", b =>
@@ -904,6 +998,11 @@ namespace Project.Infrastructure.Data.Migrations
 
             modelBuilder.Entity("Project.Application.Entities.Report", b =>
                 {
+                    b.HasOne("Project.Application.Entities.AppUser", "Assignee")
+                        .WithMany()
+                        .HasForeignKey("AssigneeId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("Project.Application.Entities.Listing", "Listing")
                         .WithMany()
                         .HasForeignKey("ListingId")
@@ -920,11 +1019,20 @@ namespace Project.Infrastructure.Data.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("Project.Application.Entities.AppUser", "ResolvedBy")
+                        .WithMany()
+                        .HasForeignKey("ResolvedById")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Assignee");
+
                     b.Navigation("Listing");
 
                     b.Navigation("ReportedUser");
 
                     b.Navigation("Reporter");
+
+                    b.Navigation("ResolvedBy");
                 });
 
             modelBuilder.Entity("Project.Application.Entities.Review", b =>

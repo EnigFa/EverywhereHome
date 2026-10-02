@@ -2,6 +2,7 @@ import { ChangeEvent, FormEvent, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { api, apiForm, mediaUrl, type HostListing, type HostListingEdit, type HostPhoto } from "../api/client";
 import { CategoryPicker } from "../components/CategoryPicker";
+import { ConfirmDialog } from "../components/ConfirmDialog";
 import { useLanguage } from "../i18n";
 
 const blank: HostListingEdit = {
@@ -31,6 +32,9 @@ export function HostListingFormPage() {
   const navigate = useNavigate();
   const [form, setForm] = useState<HostListingEdit>(blank);
   const [error, setError] = useState<string | null>(null);
+  const [askSave, setAskSave] = useState(false);
+  const [photoPending, setPhotoPending] = useState<HostPhoto | null>(null);
+  const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     if (!localStorage.getItem("eh_token")) {
@@ -51,13 +55,17 @@ export function HostListingFormPage() {
       .catch((e: Error) => setError(e.message));
   }, [id, isNew, navigate]);
 
-  async function onSubmit(event: FormEvent) {
+  function requestSave(event: FormEvent) {
     event.preventDefault();
     setError(null);
     if (form.categories.length === 0) {
       setError(t("chooseCategory"));
       return;
     }
+    setAskSave(true);
+  }
+
+  async function onSubmit() {
     const body = JSON.stringify({
       title: form.title,
       description: form.description,
@@ -83,6 +91,7 @@ export function HostListingFormPage() {
         await api(`/api/host/listings/${id}`, { method: "PUT", body });
         navigate("/host/listings");
       }
+      setAskSave(false);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Помилка");
     }
@@ -128,7 +137,7 @@ export function HostListingFormPage() {
   return (
     <section className="host-page">
       <h1>{isNew ? t("newListing") : t("editListing")}</h1>
-      <form className="profile-card host-form" onSubmit={onSubmit}>
+      <form className="profile-card host-form" onSubmit={requestSave}>
         <label className="full">
           {t("title")}
           <input value={form.title} onChange={(e) => set("title", e.target.value)} required />
@@ -201,7 +210,7 @@ export function HostListingFormPage() {
               {(form.photos ?? []).map((photo) => (
                 <div key={photo.id} className="photo-thumb">
                   <img src={mediaUrl(photo.url)} alt="" />
-                  <button type="button" className="text-btn" onClick={() => removePhoto(photo)}>
+                  <button type="button" className="text-btn" onClick={() => setPhotoPending(photo)}>
                     {t("removePhoto")}
                   </button>
                 </div>
@@ -216,6 +225,38 @@ export function HostListingFormPage() {
           {t("save")}
         </button>
       </form>
+      {askSave && (
+        <ConfirmDialog
+          title={t("confirmAction")}
+          text={t("confirmSaveListing")}
+          confirmLabel={t("confirmAction")}
+          closeLabel={t("close")}
+          busy={busy}
+          onClose={() => setAskSave(false)}
+          onConfirm={() => {
+            setBusy(true);
+            onSubmit().finally(() => setBusy(false));
+          }}
+        />
+      )}
+      {photoPending && (
+        <ConfirmDialog
+          title={t("removePhoto")}
+          text={t("confirmRemovePhoto")}
+          confirmLabel={t("confirmAction")}
+          closeLabel={t("close")}
+          busy={busy}
+          onClose={() => setPhotoPending(null)}
+          onConfirm={() => {
+            const photo = photoPending;
+            setBusy(true);
+            removePhoto(photo).finally(() => {
+              setBusy(false);
+              setPhotoPending(null);
+            });
+          }}
+        />
+      )}
     </section>
   );
 }

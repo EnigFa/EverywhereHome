@@ -25,6 +25,7 @@ public record ListingSearchQuery(
     decimal? MinPrice,
     decimal? MaxPrice,
     IReadOnlyList<ListingCategory>? Categories,
+    string? HostId,
     int Page,
     int PageSize);
 
@@ -34,7 +35,7 @@ public record ListingSearchResultDto(
     int Page,
     int PageSize);
 
-public record HostSummaryDto(string DisplayName, string? AvatarUrl);
+public record HostSummaryDto(string DisplayName, string? AvatarUrl, string Id, int TrustLevel);
 
 public record ReviewItemDto(Guid Id, string AuthorName, decimal Rating, string Text, DateTime CreatedAtUtc);
 
@@ -66,10 +67,11 @@ public record ListingDetailDto(
     IReadOnlyList<string> Amenities,
     HostSummaryDto Host,
     IReadOnlyList<ReviewItemDto> Reviews,
-    IReadOnlyList<OccupiedStayDto> OccupiedStays);
+    IReadOnlyList<OccupiedStayDto> OccupiedStays,
+    bool IsPublished);
 
 public interface IListingService
 {
     Task<ListingSearchResultDto> SearchAsync(ListingSearchQuery query, CancellationToken cancellationToken = default);
-    Task<ListingDetailDto?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
+    Task<ListingDetailDto?> GetByIdAsync(Guid id, string? viewerId = null, CancellationToken cancellationToken = default);
 }

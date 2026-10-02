@@ -77,10 +77,16 @@ public class ReportService : IReportService
         return await MapAsync(report.Id, cancellationToken);
     }
 
-    public async Task<IReadOnlyList<ReportDto>> ListAsync(string adminId, CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<ReportDto>> ListAsync(string adminId, int? status, CancellationToken cancellationToken = default)
     {
         await RequireAdminAsync(adminId);
-        var ids = await _db.Reports.AsNoTracking().OrderByDescending(r => r.CreatedAtUtc).Select(r => r.Id).ToListAsync(cancellationToken);
+        var query = _db.Reports.AsNoTracking().AsQueryable();
+        if (status is not null)
+        {
+            query = query.Where(r => (int)r.Status == status);
+        }
+
+        var ids = await query.OrderByDescending(r => r.CreatedAtUtc).Select(r => r.Id).ToListAsync(cancellationToken);
         var result = new List<ReportDto>();
         foreach (var id in ids)
         {
@@ -90,11 +96,112 @@ public class ReportService : IReportService
         return result;
     }
 
+    public async Task<ReportDto> GetAsync(string adminId, Guid id, CancellationToken cancellationToken = default)
+    {
+        await RequireAdminAsync(adminId);
+        return await MapAsync(id, cancellationToken);
+    }
+
+    public async Task<ReportDto> TakeAsync(string adminId, Guid id, CancellationToken cancellationToken = default)
+    {
+        await RequireAdminAsync(adminId);
+        var report = await FindAsync(id, cancellationToken);
+        if (report.Status != ReportStatus.New)
+        {
+            throw new InvalidOperationException("Скарга вже не в черзі.");
+        }
+
+        var conversation = new Conversation
+        {
+            Id = Guid.NewGuid(),
+            Kind = ConversationKind.Report,
+            UserId = report.ReporterId,
+            ListingId = report.ListingId,
+            ReportId = report.Id,
+            Status = CaseStatus.InProgress,
+            AssigneeId = adminId
+        };
+        _db.Conversations.Add(conversation);
+        report.Status = ReportStatus.InProgress;
+        report.AssigneeId = adminId;
+        report.ConversationId = conversation.Id;
+        await _db.SaveChangesAsync(cancellationToken);
+        return await MapAsync(id, cancellationToken);
+    }
+
+    public async Task<ReportDto> ReleaseAsync(string adminId, Guid id, CancellationToken cancellationToken = default)
+    {
+        await RequireAdminAsync(adminId);
+        var report = await FindAsync(id, cancellationToken);
+        if (report.Status != ReportStatus.InProgress)
+        {
+            throw new InvalidOperationException("Повернути в чергу можна лише скаргу в роботі.");
+        }
+
+        report.Status = ReportStatus.New;
+        report.AssigneeId = null;
+        await _db.SaveChangesAsync(cancellationToken);
+        return await MapAsync(id, cancellationToken);
+    }
+
+    public async Task<ReportDto> ResolveAsync(string adminId, Guid id, ResolveReportRequest request, CancellationToken cancellationToken = default)
+    {
+        await RequireAdminAsync(adminId);
+        if (string.IsNullOrWhiteSpace(request.Decision))
+        {
+            throw new InvalidOperationException("Напишіть рішення по скарзі.");
+        }
+
+        var report = await FindAsync(id, cancellationToken);
+        if (report.Status != ReportStatus.InProgress)
+        {
+            throw new InvalidOperationException("Спочатку візьміть скаргу в роботу.");
+        }
+
+        if (request.Unpublish)
+        {
+            if (report.ListingId is null)
+            {
+                throw new InvalidOperationException("У цій скарзі немає оголошення.");
+            }
+
+            var listing = await _db.Listings.FirstOrDefaultAsync(l => l.Id == report.ListingId, cancellationToken)
+                ?? throw new InvalidOperationException("Оголошення не знайдено.");
+            listing.IsPublished = false;
+        }
+
+        if (request.Block && !string.IsNullOrWhiteSpace(report.ReportedUserId))
+        {
+            var user = await _users.FindByIdAsync(report.ReportedUserId) ?? throw new InvalidOperationException("Користувача не знайдено.");
+            if (user.IsAdmin || user.Id == adminId)
+            {
+                throw new InvalidOperationException("Цього користувача заблокувати не можна.");
+            }
+
+            user.IsBlocked = true;
+            var listings = await _db.Listings.Where(l => l.HostId == user.Id && l.IsPublished).ToListAsync(cancellationToken);
+            foreach (var listing in listings)
+            {
+                listing.IsPublished = false;
+            }
+        }
+
+        report.Status = ReportStatus.Resolved;
+        report.ResolvedById = adminId;
+        report.ResolvedAtUtc = DateTime.UtcNow;
+        report.Decision = request.Decision.Trim();
+        await _db.SaveChangesAsync(cancellationToken);
+        return await MapAsync(id, cancellationToken);
+    }
+
     public async Task<ReportDto> MarkReviewedAsync(string adminId, Guid id, CancellationToken cancellationToken = default)
     {
         await RequireAdminAsync(adminId);
         var report = await FindAsync(id, cancellationToken);
-        report.Status = ReportStatus.Reviewed;
+        report.Status = ReportStatus.Resolved;
+        report.ResolvedById = adminId;
+        report.ResolvedAtUtc = DateTime.UtcNow;
+        report.Decision ??= "Перевірено";
         await _db.SaveChangesAsync(cancellationToken);
         return await MapAsync(id, cancellationToken);
     }
@@ -109,7 +216,10 @@ public class ReportService : IReportService
         }
 
         await UnpublishListingAsync(adminId, report.ListingId.Value, cancellationToken);
-        report.Status = ReportStatus.Reviewed;
+        report.Status = ReportStatus.Resolved;
+        report.ResolvedById = adminId;
+        report.ResolvedAtUtc = DateTime.UtcNow;
+        report.Decision ??= "Перевірено";
         await _db.SaveChangesAsync(cancellationToken);
         return await MapAsync(id, cancellationToken);
     }
@@ -135,13 +245,24 @@ public class ReportService : IReportService
         }
 
         user.IsBlocked = true;
+        var listings = await _db.Listings
+            .Where(l => l.HostId == user.Id && l.IsPublished)
+            .ToListAsync(cancellationToken);
+        foreach (var listing in listings)
+        {
+            listing.IsPublished = false;
+        }
+
         var update = await _users.UpdateAsync(user);
         if (!update.Succeeded)
         {
             throw new InvalidOperationException(string.Join(" ", update.Errors.Select(e => e.Description)));
         }
 
-        report.Status = ReportStatus.Reviewed;
+        report.Status = ReportStatus.Resolved;
+        report.ResolvedById = adminId;
+        report.ResolvedAtUtc = DateTime.UtcNow;
+        report.Decision ??= "Перевірено";
         await _db.SaveChangesAsync(cancellationToken);
         return await MapAsync(id, cancellationToken);
     }
@@ -158,7 +279,7 @@ public class ReportService : IReportService
     private async Task RequireAdminAsync(string adminId)
     {
         var admin = await _users.FindByIdAsync(adminId);
-        if (admin is null || !admin.IsAdmin || admin.IsBlocked)
+        if (admin is null || (!admin.IsAdmin && !admin.IsChiefAdmin) || admin.IsBlocked)
         {
             throw new UnauthorizedAccessException("Ця дія доступна лише адміністратору.");
         }
@@ -184,8 +305,16 @@ public class ReportService : IReportService
                 r.Listing != null ? r.Listing.Title : null,
                 r.ReportedUserId,
                 r.ReportedUser != null ? r.ReportedUser.DisplayName : null,
+                r.ReporterId,
                 r.Reporter!.DisplayName,
-                r.CreatedAtUtc))
+                r.CreatedAtUtc,
+                r.AssigneeId,
+                r.Assignee != null ? r.Assignee.DisplayName : null,
+                r.ResolvedById,
+                r.ResolvedBy != null ? r.ResolvedBy.DisplayName : null,
+                r.ResolvedAtUtc,
+                r.Decision,
+                r.ConversationId))
             .FirstAsync(cancellationToken);
     }
 }

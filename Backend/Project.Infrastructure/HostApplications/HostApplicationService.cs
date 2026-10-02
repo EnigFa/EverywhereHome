@@ -83,7 +83,8 @@ public class HostApplicationService : IHostApplicationService
                 x.AdminNote,
                 x.CreatedAtUtc,
                 x.User!.DisplayName,
-                x.User.Email))
+                x.User.Email,
+                x.UserId))
             .ToListAsync(cancellationToken);
     }
 
@@ -128,7 +129,7 @@ public class HostApplicationService : IHostApplicationService
     private async Task RequireAdminAsync(string adminId)
     {
         var admin = await _users.FindByIdAsync(adminId);
-        if (admin is null || !admin.IsAdmin || admin.IsBlocked)
+        if (admin is null || (!admin.IsAdmin && !admin.IsChiefAdmin) || admin.IsBlocked)
         {
             throw new UnauthorizedAccessException("Ця дія доступна лише адміністратору.");
         }
@@ -141,5 +142,5 @@ public class HostApplicationService : IHostApplicationService
     }
 
     private static HostApplicationDto Map(HostApplication application, string? name, string? email) =>
-        new(application.Id, application.FullName, application.DocumentUrl, (int)application.Status, application.AdminNote, application.CreatedAtUtc, name, email);
+        new(application.Id, application.FullName, application.DocumentUrl, (int)application.Status, application.AdminNote, application.CreatedAtUtc, name, email, application.UserId);
 }

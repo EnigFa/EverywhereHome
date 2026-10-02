@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using Microsoft.AspNetCore.Mvc;
 using Project.Application.Entities;
 using Project.Application.Listings;
@@ -25,12 +26,13 @@ public class ListingsController : ControllerBase
         [FromQuery] decimal? minPrice,
         [FromQuery] decimal? maxPrice,
         [FromQuery] ListingCategory[]? categories,
+        [FromQuery] string? hostId,
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 25,
         CancellationToken cancellationToken = default)
     {
         var result = await _listings.SearchAsync(
-            new ListingSearchQuery(q, city, checkIn, checkOut, guests, minPrice, maxPrice, categories, page, pageSize),
+            new ListingSearchQuery(q, city, checkIn, checkOut, guests, minPrice, maxPrice, categories, hostId, page, pageSize),
             cancellationToken);
         return Ok(result);
     }
@@ -38,7 +40,7 @@ public class ListingsController : ControllerBase
     [HttpGet("{id:guid}")]
     public async Task<ActionResult<ListingDetailDto>> GetById(Guid id, CancellationToken cancellationToken)
     {
-        var listing = await _listings.GetByIdAsync(id, cancellationToken);
+        var listing = await _listings.GetByIdAsync(id, User.FindFirstValue(ClaimTypes.NameIdentifier), cancellationToken);
         return listing is null ? NotFound() : Ok(listing);
     }
 }

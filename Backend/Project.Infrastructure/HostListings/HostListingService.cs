@@ -63,13 +63,84 @@ public class HostListingService : IHostListingService
         return ToDto(listing);
     }
 
+    public async Task<HostListingEditDto> GetAnyAsync(string adminId, Guid id, CancellationToken cancellationToken = default)
+    {
+        await RequireStaffAsync(adminId);
+        return ToEditDto(await FindAnyAsync(id, cancellationToken));
+    }
+
+    public async Task<HostListingDto> UpdateAnyAsync(string adminId, Guid id, HostListingInput input, CancellationToken cancellationToken = default)
+    {
+        var admin = await RequireStaffAsync(adminId);
+        if (!admin.IsChiefAdmin)
+        {
+            throw new UnauthorizedAccessException("Повне редагування доступне головному адміністратору.");
+        }
+
+        Validate(input);
+        var listing = await FindAnyAsync(id, cancellationToken);
+        Apply(listing, input);
+        await ReplaceAmenitiesAsync(listing, input.Amenities, cancellationToken);
+        await _db.SaveChangesAsync(cancellationToken);
+        return ToDto(listing);
+    }
+
+    public async Task UnpublishAnyAsync(string adminId, Guid id, CancellationToken cancellationToken = default)
+    {
+        await RequireStaffAsync(adminId);
+        var listing = await FindAnyAsync(id, cancellationToken);
+        listing.IsPublished = false;
+        await _db.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task<HostPhotoDto> AddPhotoAnyAsync(string adminId, Guid listingId, Stream content, string fileName, CancellationToken cancellationToken = default)
+    {
+        var admin = await RequireStaffAsync(adminId);
+        if (!admin.IsChiefAdmin)
+        {
+            throw new UnauthorizedAccessException("Повне редагування доступне головному адміністратору.");
+        }
+
+        var listing = await FindAnyAsync(listingId, cancellationToken);
+        if (listing.Photos.Count >= MaxPhotos)
+        {
+            throw new InvalidOperationException("Можна додати щонайбільше 12 фото.");
+        }
+
+        var url = await _files.SaveListingPhotoAsync(content, fileName, cancellationToken);
+        var photo = new ListingPhoto
+        {
+            Id = Guid.NewGuid(),
+            ListingId = listing.Id,
+            Url = url,
+            SortOrder = listing.Photos.Count == 0 ? 0 : listing.Photos.Max(p => p.SortOrder) + 1
+        };
+        listing.Photos.Add(photo);
+        await _db.SaveChangesAsync(cancellationToken);
+        return new HostPhotoDto(photo.Id, photo.Url);
+    }
+
+    public async Task DeletePhotoAnyAsync(string adminId, Guid listingId, Guid photoId, CancellationToken cancellationToken = default)
+    {
+        var admin = await RequireStaffAsync(adminId);
+        if (!admin.IsChiefAdmin)
+        {
+            throw new UnauthorizedAccessException("Повне редагування доступне головному адміністратору.");
+        }
+
+        var listing = await FindAnyAsync(listingId, cancellationToken);
+        var photo = listing.Photos.FirstOrDefault(p => p.Id == photoId)
+            ?? throw new InvalidOperationException("Фото не знайдено.");
+        _files.TryDeleteLocal(photo.Url);
+        listing.Photos.Remove(photo);
+        await _db.SaveChangesAsync(cancellationToken);
+    }
+
     public async Task DeleteAsync(string hostId, Guid id, CancellationToken cancellationToken = default)
     {
         var listing = await FindMineAsync(hostId, id, cancellationToken);
-        var hasConfirmed = await _db.Bookings.AnyAsync(
-            b => b.ListingId == id && b.Status == BookingStatus.Confirmed,
-            cancellationToken);
-        if (hasConfirmed)
+        var hasBookings = await _db.Bookings.AnyAsync(b => b.ListingId == id, cancellationToken);
+        if (hasBookings)
         {
             listing.IsPublished = false;
             await _db.SaveChangesAsync(cancellationToken);
@@ -120,6 +191,28 @@ public class HostListingService : IHostListingService
             .ThenInclude(a => a.Amenity)
             .FirstOrDefaultAsync(l => l.Id == id && l.HostId == hostId, cancellationToken)
             ?? throw new InvalidOperationException("Оголошення не знайдено.");
+    }
+
+    private async Task<Listing> FindAnyAsync(Guid id, CancellationToken cancellationToken)
+    {
+        return await _db.Listings
+            .Include(l => l.Photos)
+            .Include(l => l.CategoryLinks)
+            .Include(l => l.Amenities)
+            .ThenInclude(a => a.Amenity)
+            .FirstOrDefaultAsync(l => l.Id == id, cancellationToken)
+            ?? throw new InvalidOperationException("Оголошення не знайдено.");
+    }
+
+    private async Task<AppUser> RequireStaffAsync(string adminId)
+    {
+        var admin = await _users.FindByIdAsync(adminId) ?? throw new UnauthorizedAccessException("Ця дія доступна лише адміністратору.");
+        if (admin.IsBlocked || (!admin.IsAdmin && !admin.IsChiefAdmin))
+        {
+            throw new UnauthorizedAccessException("Ця дія доступна лише адміністратору.");
+        }
+
+        return admin;
     }
 
     private static void Validate(HostListingInput input)

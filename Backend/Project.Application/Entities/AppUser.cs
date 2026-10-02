@@ -8,7 +8,9 @@ public class AppUser : IdentityUser
     public string? AvatarUrl { get; set; }
     public bool IsHost { get; set; }
     public bool IsAdmin { get; set; }
+    public bool IsChiefAdmin { get; set; }
     public bool IsBlocked { get; set; }
+    public int TrustLevel { get; set; }
     public bool PhoneVerified { get; set; }
 
     public string? School { get; set; }

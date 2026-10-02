@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { Icon } from "./Icon";
 import { useLanguage, type Language } from "../i18n";
 
 export function LanguageSwitcher() {
@@ -13,7 +14,7 @@ export function LanguageSwitcher() {
   const choose = (next: Language) => { setLanguage(next); setOpen(false); };
   return <div className="language-switcher" ref={ref}>
     <button type="button" className="language-toggle" aria-label={t("language")} onClick={() => setOpen((v) => !v)}>
-      <span aria-hidden>🌐</span><span>{language === "uk" ? "UA" : "EN"}</span><span aria-hidden>⌄</span>
+      <Icon name="globe" /><span>{language === "uk" ? "UA" : "EN"}</span>
     </button>
     {open && <div className="language-menu">
       <button type="button" className={language === "uk" ? "selected" : ""} onClick={() => choose("uk")}>🇺🇦 {t("ukrainian")}</button>

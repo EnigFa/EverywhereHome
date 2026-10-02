@@ -1,7 +1,9 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { api, mediaUrl, type Booking, type ListingDetail } from "../api/client";
-import { getToken } from "../api/session";
+import { api, mediaUrl, type Booking, type ListingDetail, type Profile } from "../api/client";
+import { currentUserId, getToken } from "../api/session";
+import { ConfirmDialog } from "../components/ConfirmDialog";
+import { ListingEditor } from "../components/ListingEditor";
 import { useLanguage } from "../i18n";
 
 export function ListingPage() {
@@ -16,6 +18,11 @@ export function ListingPage() {
   const [submitting, setSubmitting] = useState(false);
   const [photoIndex, setPhotoIndex] = useState(0);
   const [lightbox, setLightbox] = useState(false);
+  const [favorite, setFavorite] = useState(false);
+  const [me, setMe] = useState<Profile | null>(null);
+  const [editing, setEditing] = useState(false);
+  const [askOff, setAskOff] = useState(false);
+  const [busy, setBusy] = useState(false);
 
   useEffect(() => {
     if (!id) {
@@ -28,6 +35,10 @@ export function ListingPage() {
       })
       .catch((e: Error) => setError(e.message));
   }, [id]);
+
+  useEffect(() => {
+    document.title = `${listing?.title || t("listing")} · EverywhereHome`;
+  }, [listing?.title, t]);
 
   const nights = useMemo(() => {
     if (!checkIn || !checkOut) {
@@ -66,6 +77,20 @@ export function ListingPage() {
     return () => window.removeEventListener("keydown", onKey);
   }, [photos.length]);
 
+  const signedIn = Boolean(getToken());
+
+  useEffect(() => {
+    if (!signedIn) return;
+    api<Profile>("/api/profile").then(setMe).catch(() => setMe(null));
+  }, [signedIn]);
+
+  useEffect(() => {
+    if (!signedIn || !listing) return;
+    api<Array<{ id: string }>>("/api/favorites")
+      .then((items) => setFavorite(items.some((item) => item.id === listing.id)))
+      .catch(() => undefined);
+  }, [listing, signedIn]);
+
   if (error && !listing) {
     return <p className="error">{error}</p>;
   }
@@ -75,7 +100,16 @@ export function ListingPage() {
 
   const stayTotal = nights * listing.pricePerNight;
   const total = nights > 0 ? stayTotal + listing.cleaningFee : 0;
-  const signedIn = Boolean(getToken());
+
+  async function toggleFavorite() {
+    if (!listing) return;
+    try {
+      await api(`/api/favorites/${listing.id}`, { method: favorite ? "DELETE" : "POST" });
+      setFavorite((value) => !value);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : t("error"));
+    }
+  }
 
   async function onBook(event: FormEvent) {
     event.preventDefault();
@@ -139,7 +173,32 @@ export function ListingPage() {
         <p className="listing-facts">
           {listing.maxGuests} {t("guestsCount")} · {listing.bedrooms} {t("bedrooms")} · {listing.beds} {t("beds")} · {listing.bathrooms} {t("bathrooms")}
         </p>
-        <p>{t("host")} — {listing.host.displayName}</p>
+        <p>{t("host")} — <Link className="user-link" to={`/users/${listing.host.id}`}>{listing.host.displayName}</Link></p>
+        {me?.isAdmin && (
+          <p className="staff-meta">
+            {t("listingId")}: {listing.id}
+            <br />
+            {t("trustStatus")}: {listing.host.trustLevel === 1 ? t("reliable") : listing.host.trustLevel === 2 ? t("suspicious") : t("ordinary")}
+          </p>
+        )}
+        {!listing.isPublished && <p className="muted">{t("draft")}</p>}
+        {signedIn && (currentUserId() === listing.host.id || me?.isChiefAdmin) && (
+          <button type="button" className="dropdown-toggle" onClick={() => setEditing((open) => !open)}>{t("edit")}</button>
+        )}
+        {me?.isAdmin && listing.isPublished && (
+          <button type="button" className="text-btn" onClick={() => setAskOff(true)}>{t("deactivate")}</button>
+        )}
+        {editing && (
+          <ListingEditor
+            loadUrl={currentUserId() === listing.host.id ? `/api/host/listings/${listing.id}` : `/api/admin/listings/${listing.id}`}
+            saveUrl={currentUserId() === listing.host.id ? `/api/host/listings/${listing.id}` : `/api/admin/listings/${listing.id}`}
+            photoUrl={currentUserId() === listing.host.id ? `/api/host/listings/${listing.id}` : `/api/admin/listings/${listing.id}`}
+            onSaved={() => {
+              api<ListingDetail>(`/api/listings/${listing.id}`).then(setListing).catch((e: Error) => setError(e.message));
+            }}
+          />
+        )}
+        {signedIn && <div className="listing-actions"><button type="button" className="dropdown-toggle" onClick={() => void toggleFavorite()}>{favorite ? t("removeFavorite") : t("favorite")}</button>{currentUserId() !== listing.host.id && <Link className="dropdown-toggle" to={`/messages?listingId=${listing.id}`}>{t("messageHost")}</Link>}</div>}
         <p>{listing.description}</p>
         <h2>{t("amenities")}</h2>
         <ul className="amenity-list">
@@ -238,6 +297,27 @@ export function ListingPage() {
             ×
           </button>
         </div>
+      )}
+      {askOff && (
+        <ConfirmDialog
+          title={t("deactivate")}
+          text={t("confirmUnpublish")}
+          confirmLabel={t("confirmAction")}
+          closeLabel={t("close")}
+          busy={busy}
+          onClose={() => setAskOff(false)}
+          onConfirm={() => {
+            setBusy(true);
+            api(`/api/admin/listings/${listing.id}/unpublish`, { method: "POST" })
+              .then(() => api<ListingDetail>(`/api/listings/${listing.id}`))
+              .then(setListing)
+              .catch((e: Error) => setError(e.message))
+              .finally(() => {
+                setBusy(false);
+                setAskOff(false);
+              });
+          }}
+        />
       )}
     </article>
   );

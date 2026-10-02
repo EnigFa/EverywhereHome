@@ -55,6 +55,12 @@ public class ListingService : IListingService
                 l.CategoryLinks.Any(link => cats.Contains(link.Category)));
         }
 
+        if (!string.IsNullOrWhiteSpace(query.HostId))
+        {
+            var hostId = query.HostId.Trim();
+            listings = listings.Where(l => l.HostId == hostId);
+        }
+
         if (query.CheckIn is not null && query.CheckOut is not null && query.CheckOut > query.CheckIn)
         {
             var checkIn = query.CheckIn.Value;
@@ -90,11 +96,13 @@ public class ListingService : IListingService
         return new ListingSearchResultDto(items, total, page, pageSize);
     }
 
-    public async Task<ListingDetailDto?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
+    public async Task<ListingDetailDto?> GetByIdAsync(Guid id, string? viewerId = null, CancellationToken cancellationToken = default)
     {
         return await _db.Listings
             .AsNoTracking()
-            .Where(l => l.Id == id && l.IsPublished && !l.Host!.IsBlocked)
+            .Where(l => l.Id == id && (
+                (l.IsPublished && !l.Host!.IsBlocked)
+                || (viewerId != null && (l.HostId == viewerId || _db.Users.Any(u => u.Id == viewerId && !u.IsBlocked && (u.IsAdmin || u.IsChiefAdmin))))))
             .Select(l => new ListingDetailDto(
                 l.Id,
                 l.Title,
@@ -119,7 +127,7 @@ public class ListingService : IListingService
                 l.CancellationPolicy,
                 l.Photos.OrderBy(p => p.SortOrder).Select(p => p.Url).ToList(),
                 l.Amenities.Select(a => a.Amenity!.Name).ToList(),
-                new HostSummaryDto(l.Host!.DisplayName, l.Host.AvatarUrl),
+                new HostSummaryDto(l.Host!.DisplayName, l.Host.AvatarUrl, l.Host.Id, l.Host.TrustLevel),
                 l.Reviews
                     .OrderByDescending(r => r.CreatedAtUtc)
                     .Select(r => new ReviewItemDto(r.Id, r.Author!.DisplayName, r.Rating, r.Text, r.CreatedAtUtc))
@@ -128,7 +136,8 @@ public class ListingService : IListingService
                     .Where(b => b.Status == BookingStatus.Confirmed)
                     .OrderBy(b => b.CheckIn)
                     .Select(b => new OccupiedStayDto(b.CheckIn, b.CheckOut))
-                    .ToList()))
+                    .ToList(),
+                l.IsPublished))
             .FirstOrDefaultAsync(cancellationToken);
     }
 }

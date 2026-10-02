@@ -8,7 +8,8 @@ public record HostApplicationDto(
     string? AdminNote,
     DateTime CreatedAtUtc,
     string? ApplicantName,
-    string? ApplicantEmail);
+    string? ApplicantEmail,
+    string UserId);
 
 public interface IHostApplicationService
 {

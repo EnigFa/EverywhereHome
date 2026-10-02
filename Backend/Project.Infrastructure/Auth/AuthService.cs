@@ -35,12 +35,13 @@ public class AuthService : IAuthService
             throw new InvalidOperationException("Користувач з такою поштою вже існує.");
         }
 
+        var smtpReady = IsSmtpConfigured();
         var user = new AppUser
         {
             UserName = request.Email,
             Email = request.Email,
             DisplayName = request.DisplayName,
-            EmailConfirmed = false
+            EmailConfirmed = !smtpReady
         };
 
         var result = await _userManager.CreateAsync(user, request.Password);
@@ -50,14 +51,18 @@ public class AuthService : IAuthService
             throw new InvalidOperationException(errors);
         }
 
-        var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
-        var frontend = _configuration["Frontend:Url"]?.TrimEnd('/') ?? "http://localhost:5173";
-        var link = $"{frontend}/api/auth/confirm-email?userId={Uri.EscapeDataString(user.Id)}&token={Uri.EscapeDataString(token)}";
-        await _email.SendAsync(
-            user.Email!,
-            "Підтвердьте пошту EverywhereHome",
-            $"Перейдіть за посиланням, щоб підтвердити пошту:{Environment.NewLine}{link}",
-            cancellationToken);
+        if (smtpReady)
+        {
+            var token = await _userManager.GenerateEmailConfirmationTokenAsync(user);
+            var frontend = _configuration["Frontend:Url"]?.TrimEnd('/') ?? "http://localhost:5173";
+            var link = $"{frontend}/api/auth/confirm-email?userId={Uri.EscapeDataString(user.Id)}&token={Uri.EscapeDataString(token)}";
+            await _email.SendAsync(
+                user.Email!,
+                "Підтвердьте пошту EverywhereHome",
+                $"Перейдіть за посиланням, щоб підтвердити пошту:{Environment.NewLine}{link}",
+                cancellationToken);
+        }
+
         return CreateResponse(user);
     }
 
@@ -156,12 +161,20 @@ public class AuthService : IAuthService
         return CreateResponse(user);
     }
 
+    private bool IsSmtpConfigured()
+    {
+        var host = _configuration["Email:Host"];
+        var user = _configuration["Email:User"];
+        var password = _configuration["Email:Password"];
+        return !string.IsNullOrWhiteSpace(host)
+            && !string.IsNullOrWhiteSpace(user)
+            && !string.IsNullOrWhiteSpace(password);
+    }
+
     public AuthProvidersDto GetProviders()
     {
         var google = !string.IsNullOrWhiteSpace(_configuration["Authentication:Google:ClientId"]);
-        var facebook = !string.IsNullOrWhiteSpace(_configuration["Authentication:Facebook:AppId"]);
-        var apple = !string.IsNullOrWhiteSpace(_configuration["Authentication:Apple:ClientId"]);
-        return new AuthProvidersDto(google, facebook, apple);
+        return new AuthProvidersDto(google);
     }
 
     private AuthResponse CreateResponse(AppUser user)

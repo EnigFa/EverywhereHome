@@ -39,7 +39,8 @@ export type ListingDetail = {
   cancellationPolicy: string;
   photoUrls: string[];
   amenities: string[];
-  host: { displayName: string; avatarUrl: string | null };
+  host: { id: string; displayName: string; avatarUrl: string | null; trustLevel: number };
+  isPublished: boolean;
 };
 
 export type AuthResponse = {
@@ -69,6 +70,10 @@ export type Profile = {
   biographyTitle: string | null;
   pets: string | null;
   intro: string | null;
+  emailConfirmed?: boolean;
+  id?: string;
+  isAdmin: boolean;
+  isChiefAdmin: boolean;
 };
 
 export type HostListing = {
@@ -111,6 +116,9 @@ export type HostPhoto = {
   id: string;
   url: string;
 };
+
+export type ChatMessage = { id: string; senderId: string; senderName: string; text: string; createdAtUtc: string; editedAtUtc?: string | null; isDeleted?: boolean; readByOther?: boolean };
+export type Conversation = { id: string; kind: number; listingId: string | null; listingTitle: string | null; userId: string; userName: string; hostId: string | null; unreadCount: number };
 
 export type Booking = {
   id: string;

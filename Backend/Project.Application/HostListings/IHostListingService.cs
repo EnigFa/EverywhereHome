@@ -56,6 +56,11 @@ public interface IHostListingService
     Task<HostListingEditDto> GetMineAsync(string hostId, Guid id, CancellationToken cancellationToken = default);
     Task<HostListingDto> CreateAsync(string hostId, HostListingInput input, CancellationToken cancellationToken = default);
     Task<HostListingDto> UpdateAsync(string hostId, Guid id, HostListingInput input, CancellationToken cancellationToken = default);
+    Task<HostListingEditDto> GetAnyAsync(string adminId, Guid id, CancellationToken cancellationToken = default);
+    Task<HostListingDto> UpdateAnyAsync(string adminId, Guid id, HostListingInput input, CancellationToken cancellationToken = default);
+    Task UnpublishAnyAsync(string adminId, Guid id, CancellationToken cancellationToken = default);
+    Task<HostPhotoDto> AddPhotoAnyAsync(string adminId, Guid listingId, Stream content, string fileName, CancellationToken cancellationToken = default);
+    Task DeletePhotoAnyAsync(string adminId, Guid listingId, Guid photoId, CancellationToken cancellationToken = default);
     Task DeleteAsync(string hostId, Guid id, CancellationToken cancellationToken = default);
     Task<HostPhotoDto> AddPhotoAsync(string hostId, Guid listingId, Stream content, string fileName, CancellationToken cancellationToken = default);
     Task DeletePhotoAsync(string hostId, Guid listingId, Guid photoId, CancellationToken cancellationToken = default);

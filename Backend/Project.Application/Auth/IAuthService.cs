@@ -10,7 +10,7 @@ public record ConfirmEmailRequest(string UserId, string Token);
 
 public record ExternalLoginRequest(string Provider, string ProviderKey, string Email, string DisplayName);
 
-public record AuthProvidersDto(bool Google, bool Facebook, bool Apple);
+public record AuthProvidersDto(bool Google);
 
 public interface IAuthService
 {

@@ -24,7 +24,7 @@ public class SmtpEmailSender : IEmailSender
 
         if (string.IsNullOrWhiteSpace(host) || string.IsNullOrWhiteSpace(user) || string.IsNullOrWhiteSpace(password))
         {
-            throw new InvalidOperationException("Пошта для листів не налаштована.");
+            return;
         }
 
         using var message = new MailMessage(string.IsNullOrWhiteSpace(from) ? user : from, to, subject, body);
